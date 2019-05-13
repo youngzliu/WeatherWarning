@@ -8,7 +8,7 @@
 
 import React, { Component } from "react";
 import { Platform, StyleSheet, Text, View } from "react-native";
-import MapView, { PROVIDER_GOOGLE } from "react-native-maps";
+import MapView, { PROVIDER_GOOGLE, Marker } from "react-native-maps";
 
 export default class App extends Component {
   constructor(props) {
@@ -55,7 +55,15 @@ export default class App extends Component {
               latitudeDelta: 0.025,
               longitudeDelta: 0.025
             }}
-          />
+          >
+            <Marker
+              coordinate={{
+                latitude: this.state.latitude,
+                longitude: this.state.longitude
+              }}
+              title={"Your Location"}
+            />
+          </MapView>
         </View>
       );
     }
