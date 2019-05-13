@@ -10,30 +10,55 @@ import React, { Component } from "react";
 import { Platform, StyleSheet, Text, View } from "react-native";
 import MapView, { PROVIDER_GOOGLE } from "react-native-maps";
 
-const instructions = Platform.select({
-  ios: "Press Cmd+R to reload,\n" + "Cmd+D or shake for dev menu",
-  android:
-    "Double tap R on your keyboard to reload,\n" +
-    "Shake or press menu button for dev menu"
-});
+export default class App extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      latitude: null,
+      longitude: null,
+      error: null
+    };
+  }
 
-type Props = {};
-export default class App extends Component<Props> {
-  render() {
-    return (
-      <View style={styles.container}>
-        <MapView
-          provider={PROVIDER_GOOGLE} // remove if not using Google Maps
-          style={styles.map}
-          region={{
-            latitude: 37.78825,
-            longitude: -122.4324,
-            latitudeDelta: 0.015,
-            longitudeDelta: 0.0121
-          }}
-        />
-      </View>
+  componentDidMount() {
+    navigator.geolocation.getCurrentPosition(
+      position => {
+        console.log("wokeeey");
+        console.log(position);
+        this.setState({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          error: null
+        });
+      },
+      error => this.setState({ error: error.message }),
+      { enableHighAccuracy: false, timeout: 200000, maximumAge: 1000 }
     );
+  }
+
+  render() {
+    if (this.state.latitude === null || this.state.longitude === null) {
+      return (
+        <View>
+          <Text> {this.state.error} </Text>
+        </View>
+      );
+    } else {
+      return (
+        <View style={styles.container}>
+          <MapView
+            provider={PROVIDER_GOOGLE} // remove if not using Google Maps
+            style={styles.map}
+            region={{
+              latitude: this.state.latitude,
+              longitude: this.state.longitude,
+              latitudeDelta: 0.025,
+              longitudeDelta: 0.025
+            }}
+          />
+        </View>
+      );
+    }
   }
 }
 
