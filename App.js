@@ -1,14 +1,7 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- * @flow
- */
-
 import React, { Component } from "react";
 import { Platform, StyleSheet, Text, View } from "react-native";
 import MapView, { PROVIDER_GOOGLE, Marker } from "react-native-maps";
+import { PermissionsAndroid } from "react-native";
 
 export default class App extends Component {
   constructor(props) {
@@ -16,28 +9,56 @@ export default class App extends Component {
     this.state = {
       latitude: null,
       longitude: null,
-      error: null
+      error: null,
+      locationGranted: false
     };
+    this.requestLocationPermission = this.requestLocationPermission.bind(this);
   }
 
   componentDidMount() {
-    navigator.geolocation.getCurrentPosition(
-      position => {
-        console.log("wokeeey");
-        console.log(position);
-        this.setState({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-          error: null
-        });
-      },
-      error => this.setState({ error: error.message }),
-      { enableHighAccuracy: false, timeout: 200000, maximumAge: 1000 }
-    );
+    this.requestLocationPermission();
+  }
+
+  async requestLocationPermission() {
+    try {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        {
+          title: "Location Permission",
+          message:
+            "This app needs access to your location to provide you location data.",
+          buttonPositive: "OK"
+        }
+      );
+      if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+        navigator.geolocation.getCurrentPosition(
+          position => {
+            this.setState({
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+              error: null,
+              locationGranted: true
+            });
+          },
+          error => this.setState({ error: error.message }),
+          { enableHighAccuracy: true, timeout: 200000, maximumAge: 1000 }
+        );
+      } else {
+        console.log("Camera permission denied");
+      }
+    } catch (err) {
+      console.warn(err);
+    }
   }
 
   render() {
-    if (this.state.latitude === null || this.state.longitude === null) {
+    if (this.state.locationGranted === false) {
+      return (
+        <View>
+          <Text> Please enable location to use this app. </Text>
+        </View>
+      );
+    } else if (this.state.latitude === null || this.state.longitude === null) {
       return (
         <View>
           <Text> {this.state.error} </Text>
