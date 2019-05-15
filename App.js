@@ -3,6 +3,7 @@ import { Platform, StyleSheet, Text, View } from "react-native";
 import MapView, { PROVIDER_GOOGLE, Marker, Callout } from "react-native-maps";
 import { PermissionsAndroid } from "react-native";
 import { apiKey } from "./apiKey";
+import CustomCallout from "./CustomCallout";
 
 export default class App extends Component {
   constructor(props) {
@@ -11,8 +12,8 @@ export default class App extends Component {
       latitude: null,
       longitude: null,
       error: null,
-      locationGranted: false,
-      currentWeather: ""
+      locationGranted: null,
+      currentWeather: "Loading weather data..."
     };
     this.requestLocationPermission = this.requestLocationPermission.bind(this);
     this.getWeather = this.getWeather.bind(this);
@@ -68,7 +69,7 @@ export default class App extends Component {
           { enableHighAccuracy: true, timeout: 200000, maximumAge: 1000 }
         );
       } else {
-        console.log("Camera permission denied");
+        this.setState({ locationGranted: false });
       }
     } catch (err) {
       console.warn(err);
@@ -107,10 +108,12 @@ export default class App extends Component {
                 longitude: this.state.longitude
               }}
             >
-              <Callout>
-                <View>
-                  <Text>{this.state.currentWeather}</Text>
-                </View>
+              <Callout tooltip={true}>
+                <CustomCallout>
+                  <Text style={{ color: "white", textAlign: "center" }}>
+                    {this.state.currentWeather}
+                  </Text>
+                </CustomCallout>
               </Callout>
             </Marker>
           </MapView>
@@ -129,14 +132,8 @@ const styles = StyleSheet.create({
   map: {
     ...StyleSheet.absoluteFillObject
   },
-  welcome: {
-    fontSize: 20,
-    textAlign: "center",
-    margin: 10
-  },
-  instructions: {
-    textAlign: "center",
-    color: "#333333",
-    marginBottom: 5
+  customView: {
+    width: 140,
+    height: 140
   }
 });
