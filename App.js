@@ -1,7 +1,8 @@
 import React, { Component } from "react";
 import { Platform, StyleSheet, Text, View } from "react-native";
-import MapView, { PROVIDER_GOOGLE, Marker } from "react-native-maps";
+import MapView, { PROVIDER_GOOGLE, Marker, Callout } from "react-native-maps";
 import { PermissionsAndroid } from "react-native";
+import { apiKey } from "./apiKey";
 
 export default class App extends Component {
   constructor(props) {
@@ -10,13 +11,32 @@ export default class App extends Component {
       latitude: null,
       longitude: null,
       error: null,
-      locationGranted: false
+      locationGranted: false,
+      currentWeather: ""
     };
     this.requestLocationPermission = this.requestLocationPermission.bind(this);
+    this.getWeather = this.getWeather.bind(this);
   }
 
   componentDidMount() {
     this.requestLocationPermission();
+  }
+
+  async getWeather(lat, long) {
+    try {
+      let response = await fetch(
+        `https://api.darksky.net/forecast/${apiKey}/${lat},${long}`
+      );
+      let responseJson = await response.json();
+      let thisHour = responseJson.hourly.data[0];
+      this.setState({
+        currentWeather: `${thisHour.temperature} ${thisHour.windSpeed} ${
+          thisHour.summary
+        }`
+      });
+    } catch (error) {
+      console.error(error);
+    }
   }
 
   async requestLocationPermission() {
@@ -39,6 +59,10 @@ export default class App extends Component {
               error: null,
               locationGranted: true
             });
+            this.getWeather(
+              position.coords.latitude,
+              position.coords.longitude
+            );
           },
           error => this.setState({ error: error.message }),
           { enableHighAccuracy: true, timeout: 200000, maximumAge: 1000 }
@@ -82,8 +106,13 @@ export default class App extends Component {
                 latitude: this.state.latitude,
                 longitude: this.state.longitude
               }}
-              title={"Your Location"}
-            />
+            >
+              <Callout>
+                <View>
+                  <Text>{this.state.currentWeather}</Text>
+                </View>
+              </Callout>
+            </Marker>
           </MapView>
         </View>
       );
