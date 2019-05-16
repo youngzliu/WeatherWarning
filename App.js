@@ -17,11 +17,16 @@ export default class App extends Component {
     };
     this.requestLocationPermission = this.requestLocationPermission.bind(this);
     this.getWeather = this.getWeather.bind(this);
+    this.setMarkerRefresh = this.setMarkerRefresh.bind(this);
   }
 
   componentDidMount() {
     this.requestLocationPermission();
   }
+
+  // componentDidUpdate() {
+  //   this.currentMarker.showCallout();
+  // }
 
   async getWeather(lat, long) {
     try {
@@ -30,14 +35,21 @@ export default class App extends Component {
       );
       let responseJson = await response.json();
       let thisHour = responseJson.hourly.data[0];
-      this.setState({
-        currentWeather: `${thisHour.temperature} ${thisHour.windSpeed} ${
-          thisHour.summary
-        }`
-      });
+      this.setState(
+        {
+          currentWeather: `${thisHour.temperature} ${thisHour.windSpeed} ${
+            thisHour.summary
+          }`
+        },
+        this.setMarkerRefresh
+      );
     } catch (error) {
       console.error(error);
     }
+  }
+
+  setMarkerRefresh() {
+    setTimeout(this.currentMarker.showCallout, 1);
   }
 
   async requestLocationPermission() {
@@ -106,6 +118,9 @@ export default class App extends Component {
               coordinate={{
                 latitude: this.state.latitude,
                 longitude: this.state.longitude
+              }}
+              ref={ref => {
+                this.currentMarker = ref;
               }}
             >
               <Callout tooltip={true}>
