@@ -24,10 +24,6 @@ export default class App extends Component {
     this.requestLocationPermission();
   }
 
-  // componentDidUpdate() {
-  //   this.currentMarker.showCallout();
-  // }
-
   async getWeather(lat, long) {
     try {
       let response = await fetch(
@@ -49,7 +45,9 @@ export default class App extends Component {
   }
 
   setMarkerRefresh() {
-    setTimeout(this.currentMarker.showCallout, 1);
+    setTimeout(() => {
+      this.currentMarker.showCallout();
+    }, 1000);
   }
 
   async requestLocationPermission() {
