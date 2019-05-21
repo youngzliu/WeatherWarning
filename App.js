@@ -24,6 +24,10 @@ export default class App extends Component {
     this.requestLocationPermission();
   }
 
+  // componentDidUpdate() {
+  //   this.setMarkerRefresh();
+  // }
+
   async getWeather(lat, long) {
     try {
       let response = await fetch(
@@ -37,7 +41,9 @@ export default class App extends Component {
             thisHour.summary
           }`
         },
-        this.setMarkerRefresh
+        () => {
+          this.setMarkerRefresh();
+        }
       );
     } catch (error) {
       console.error(error);
