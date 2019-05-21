@@ -24,9 +24,11 @@ export default class App extends Component {
     this.requestLocationPermission();
   }
 
-  // componentDidUpdate() {
-  //   this.setMarkerRefresh();
-  // }
+  componentDidUpdate() {
+    setTimeout(() => {
+      this.currentMarker.showCallout();
+    }, 1);
+  }
 
   async getWeather(lat, long) {
     try {
@@ -35,16 +37,11 @@ export default class App extends Component {
       );
       let responseJson = await response.json();
       let thisHour = responseJson.hourly.data[0];
-      this.setState(
-        {
-          currentWeather: `${thisHour.temperature} ${thisHour.windSpeed} ${
-            thisHour.summary
-          }`
-        },
-        () => {
-          this.setMarkerRefresh();
-        }
-      );
+      this.setState({
+        currentWeather: `${thisHour.temperature} ${thisHour.windSpeed} ${
+          thisHour.summary
+        }`
+      });
     } catch (error) {
       console.error(error);
     }
