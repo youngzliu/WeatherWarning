@@ -3,6 +3,7 @@ import { Platform, StyleSheet, Text, View } from "react-native";
 import MapView, { PROVIDER_GOOGLE, Marker, Callout } from "react-native-maps";
 import { PermissionsAndroid } from "react-native";
 import { apiKey } from "./apiKey";
+import { initialMarkers } from "./initialMarkers";
 import CustomCallout from "./CustomCallout";
 
 export default class App extends Component {
