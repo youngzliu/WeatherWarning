@@ -1,6 +1,11 @@
 import React, { Component } from "react";
 import { Platform, StyleSheet, Text, View } from "react-native";
-import MapView, { PROVIDER_GOOGLE, Marker, Callout } from "react-native-maps";
+import MapView, {
+  PROVIDER_GOOGLE,
+  Marker,
+  Callout,
+  Polyline
+} from "react-native-maps";
 import { PermissionsAndroid } from "react-native";
 import { apiKey } from "./apiKey";
 import { initialMarkers } from "./initialMarkers";
@@ -26,9 +31,7 @@ export default class App extends Component {
   }
 
   componentDidUpdate() {
-    setTimeout(() => {
-      this.currentMarker.showCallout();
-    }, 1);
+    this.setMarkerRefresh();
   }
 
   async getWeather(lat, long) {
@@ -112,8 +115,8 @@ export default class App extends Component {
             region={{
               latitude: this.state.latitude,
               longitude: this.state.longitude,
-              latitudeDelta: 0.025,
-              longitudeDelta: 0.025
+              latitudeDelta: 3.5,
+              longitudeDelta: 3.5
             }}
           >
             <Marker
@@ -133,6 +136,34 @@ export default class App extends Component {
                 </CustomCallout>
               </Callout>
             </Marker>
+            {initialMarkers.map((marker, index) => {
+              return (
+                <Marker
+                  coordinate={{
+                    latitude: marker.latitude,
+                    longitude: marker.longitude
+                  }}
+                  pinColor={"blue"}
+                  key={index}
+                >
+                  <Callout tooltip={true}>
+                    <CustomCallout>
+                      <Text style={{ color: "white", textAlign: "center" }}>
+                        {this.state.currentWeather}
+                      </Text>
+                    </CustomCallout>
+                  </Callout>
+                </Marker>
+              );
+            })}
+            <Polyline
+              coordinates={[
+                { latitude: 46, longitude: -123.5 },
+                { latitude: 49.0, longitude: -121.6 }
+              ]}
+              strokeWidth={3}
+              strokeColor={"green"}
+            />
           </MapView>
         </View>
       );
