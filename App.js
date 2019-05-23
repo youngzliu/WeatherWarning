@@ -8,7 +8,12 @@ import MapView, {
 } from "react-native-maps";
 import { PermissionsAndroid } from "react-native";
 import { apiKey } from "./apiKey";
-import { initialMarkers, initialMarkersArray } from "./initialMarkers";
+import {
+  initialMarkers,
+  initialMarkersArray,
+  epiLat,
+  epiLong
+} from "./initialMarkers";
 import CustomCallout from "./CustomCallout";
 import { linear, round } from "./regression";
 
@@ -21,12 +26,22 @@ export default class App extends Component {
       error: null,
       locationGranted: null,
       currentWeather: "Loading weather data...",
-      predictLine: null
+      predictLine: null,
+      predictionPoints: null,
+      predictionWeather: [
+        "Loading weather data...",
+        "Loading weather data...",
+        "Loading weather data...",
+        "Loading weather data...",
+        "Loading weather data..."
+      ]
     };
     this.requestLocationPermission = this.requestLocationPermission.bind(this);
-    this.getWeather = this.getWeather.bind(this);
+    this.getCurrentWeather = this.getCurrentWeather.bind(this);
     this.setMarkerRefresh = this.setMarkerRefresh.bind(this);
     this.getPolyPoints = this.getPolyPoints.bind(this);
+    this.getPredictionPoints = this.getPredictionPoints.bind(this);
+    this.getPredictedWeather = this.getPredictedWeather.bind(this);
   }
 
   componentDidMount() {
@@ -37,7 +52,7 @@ export default class App extends Component {
     this.setMarkerRefresh();
   }
 
-  async getWeather(lat, long) {
+  async getCurrentWeather(lat, long) {
     try {
       let response = await fetch(
         `https://api.darksky.net/forecast/${apiKey}/${lat},${long}`
@@ -54,23 +69,73 @@ export default class App extends Component {
     }
   }
 
+  async getPredictedWeather() {
+    try {
+      let weatherArray = [];
+      for (let coord of this.state.predictionPoints) {
+        let response = await fetch(
+          `https://api.darksky.net/forecast/${apiKey}/${coord.latitude},${
+            coord.longitude
+          }`
+        );
+        let responseJson = await response.json();
+        let thisHour = responseJson.hourly.data[0];
+        weatherArray.push(
+          `Weather: ${thisHour.summary} Temperature: ${thisHour.temperature}F`
+        );
+      }
+      this.setState({ predictionWeather: weatherArray });
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
   setMarkerRefresh() {
     setTimeout(() => {
       this.currentMarker.showCallout();
     }, 1000);
   }
 
-  getPolyPoints(data) {
-    let result = linear(data, 2);
+  getPolyPoints(data, currentLat, currentLong) {
+    let dataWithCurrent = data.slice();
+    dataWithCurrent.push([currentLong, currentLat]);
+    let result = linear(dataWithCurrent, 5);
     let firstPoint = {
-      latitude: result.predict(-123.5)[1],
-      longitude: result.predict(-123.5)[0]
+      latitude: result.predict(epiLong - 1.65)[1],
+      longitude: result.predict(epiLong - 1.65)[0]
     };
     let secondPoint = {
-      latitude: result.predict(-121.0)[1],
-      longitude: result.predict(-121.0)[0]
+      latitude: result.predict(epiLong + 1.65)[1],
+      longitude: result.predict(epiLong + 1.65)[0]
     };
     return [firstPoint, secondPoint];
+  }
+
+  getPredictionPoints(data, currentLat, currentLong) {
+    let dataWithCurrent = data.slice();
+    dataWithCurrent.push([currentLong, currentLat]);
+    let result = linear(dataWithCurrent, 5);
+    let firstPoint = {
+      latitude: result.predict(epiLong + 1.65 * 0.2)[1],
+      longitude: result.predict(epiLong + 1.65 * 0.2)[0]
+    };
+    let secondPoint = {
+      latitude: result.predict(epiLong + 1.65 * 0.4)[1],
+      longitude: result.predict(epiLong + 1.65 * 0.4)[0]
+    };
+    let thirdPoint = {
+      latitude: result.predict(epiLong + 1.65 * 0.6)[1],
+      longitude: result.predict(epiLong + 1.65 * 0.6)[0]
+    };
+    let fourthPoint = {
+      latitude: result.predict(epiLong + 1.65 * 0.8)[1],
+      longitude: result.predict(epiLong + 1.65 * 0.8)[0]
+    };
+    let fifthPoint = {
+      latitude: result.predict(epiLong + 1.65)[1],
+      longitude: result.predict(epiLong + 1.65)[0]
+    };
+    return [firstPoint, secondPoint, thirdPoint, fourthPoint, fifthPoint];
   }
 
   async requestLocationPermission() {
@@ -87,14 +152,26 @@ export default class App extends Component {
       if (granted === PermissionsAndroid.RESULTS.GRANTED) {
         navigator.geolocation.getCurrentPosition(
           position => {
-            this.setState({
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude,
-              error: null,
-              locationGranted: true,
-              predictLine: this.getPolyPoints(initialMarkersArray)
-            });
-            this.getWeather(
+            this.setState(
+              {
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+                error: null,
+                locationGranted: true,
+                predictLine: this.getPolyPoints(
+                  initialMarkersArray,
+                  position.coords.latitude,
+                  position.coords.longitude
+                ),
+                predictionPoints: this.getPredictionPoints(
+                  initialMarkersArray,
+                  position.coords.latitude,
+                  position.coords.longitude
+                )
+              },
+              () => this.getPredictedWeather()
+            );
+            this.getCurrentWeather(
               position.coords.latitude,
               position.coords.longitude
             );
@@ -155,18 +232,24 @@ export default class App extends Component {
             </Marker>
             {initialMarkers.map((marker, index) => {
               return (
-                <Marker
-                  coordinate={{
-                    latitude: marker.latitude,
-                    longitude: marker.longitude
-                  }}
-                  pinColor={"blue"}
-                  key={index}
-                >
+                <Marker coordinate={marker} pinColor={"blue"} key={index}>
                   <Callout tooltip={true}>
                     <CustomCallout>
                       <Text style={{ color: "white", textAlign: "center" }}>
                         Past Location {index + 1}
+                      </Text>
+                    </CustomCallout>
+                  </Callout>
+                </Marker>
+              );
+            })}
+            {this.state.predictionPoints.map((coord, index) => {
+              return (
+                <Marker coordinate={coord} pinColor={"green"} key={index}>
+                  <Callout tooltip={true}>
+                    <CustomCallout>
+                      <Text style={{ color: "white", textAlign: "center" }}>
+                        {this.state.predictionWeather[index]}
                       </Text>
                     </CustomCallout>
                   </Callout>
