@@ -8,8 +8,9 @@ import MapView, {
 } from "react-native-maps";
 import { PermissionsAndroid } from "react-native";
 import { apiKey } from "./apiKey";
-import { initialMarkers } from "./initialMarkers";
+import { initialMarkers, initialMarkersArray } from "./initialMarkers";
 import CustomCallout from "./CustomCallout";
+import { linear, round } from "./regression";
 
 export default class App extends Component {
   constructor(props) {
@@ -19,11 +20,13 @@ export default class App extends Component {
       longitude: null,
       error: null,
       locationGranted: null,
-      currentWeather: "Loading weather data..."
+      currentWeather: "Loading weather data...",
+      predictLine: null
     };
     this.requestLocationPermission = this.requestLocationPermission.bind(this);
     this.getWeather = this.getWeather.bind(this);
     this.setMarkerRefresh = this.setMarkerRefresh.bind(this);
+    this.getPolyPoints = this.getPolyPoints.bind(this);
   }
 
   componentDidMount() {
@@ -42,9 +45,9 @@ export default class App extends Component {
       let responseJson = await response.json();
       let thisHour = responseJson.hourly.data[0];
       this.setState({
-        currentWeather: `${thisHour.temperature} ${thisHour.windSpeed} ${
-          thisHour.summary
-        }`
+        currentWeather: `Weather: ${thisHour.summary} Temperature: ${
+          thisHour.temperature
+        }F`
       });
     } catch (error) {
       console.error(error);
@@ -55,6 +58,19 @@ export default class App extends Component {
     setTimeout(() => {
       this.currentMarker.showCallout();
     }, 1000);
+  }
+
+  getPolyPoints(data) {
+    let result = linear(data, 2);
+    let firstPoint = {
+      latitude: result.predict(-123.5)[1],
+      longitude: result.predict(-123.5)[0]
+    };
+    let secondPoint = {
+      latitude: result.predict(-121.0)[1],
+      longitude: result.predict(-121.0)[0]
+    };
+    return [firstPoint, secondPoint];
   }
 
   async requestLocationPermission() {
@@ -75,7 +91,8 @@ export default class App extends Component {
               latitude: position.coords.latitude,
               longitude: position.coords.longitude,
               error: null,
-              locationGranted: true
+              locationGranted: true,
+              predictLine: this.getPolyPoints(initialMarkersArray)
             });
             this.getWeather(
               position.coords.latitude,
@@ -149,7 +166,7 @@ export default class App extends Component {
                   <Callout tooltip={true}>
                     <CustomCallout>
                       <Text style={{ color: "white", textAlign: "center" }}>
-                        {this.state.currentWeather}
+                        Past Location {index + 1}
                       </Text>
                     </CustomCallout>
                   </Callout>
@@ -158,8 +175,8 @@ export default class App extends Component {
             })}
             <Polyline
               coordinates={[
-                { latitude: 46, longitude: -123.5 },
-                { latitude: 49.0, longitude: -121.6 }
+                this.state.predictLine[0],
+                this.state.predictLine[1]
               ]}
               strokeWidth={3}
               strokeColor={"green"}
