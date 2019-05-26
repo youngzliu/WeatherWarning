@@ -8,7 +8,7 @@ export const initialMarkers = [
   { latitude: epiLat - 0.3, longitude: epiLong - 0.5 },
   { latitude: epiLat - 0.62, longitude: epiLong - 0.7 },
   { latitude: epiLat - 0.9, longitude: epiLong - 0.7 },
-  { latitude: epiLat - 0.9, longitude: epiLong - 1.1 }
+  { latitude: epiLat - 0.8, longitude: epiLong - 1.1 }
 ];
 
 //Other locations + current location, for regression,
